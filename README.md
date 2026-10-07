@@ -1,17 +1,5 @@
 # World Layoffs Data Cleaning & Preparation Using SQL
 
-## Table of Contents
-1. [Project Overview](#project_overiew)
-2. [Data Source](#data_source)
-3. [Tools Used](#tools_used)
-4. [Tool–Work Table](#tool-work_table)
-5. [Data Cleaning / Preparation Steps](#data_cleaning/preparation_steps)
-6. [Data Before Cleaning](#data_before_cleaning)
-7. [Data After Cleaning](#data_after_cleaning)
-8. [Results / Findings](#results/findings)
-9. [Issues](#issues)
-10. [Recommendations](#recommendations)
-
 ## Project Overview
 This project documents the data cleaning and preparation of a global layoffs dataset using SQL.
 The objective was to transform the raw imported table into a cleaner analysis-ready table while preserving the original raw data. The cleaning workflow focused on:
@@ -29,7 +17,7 @@ The supplied SQL explicitly follows the principle of not destroying the raw data
 
 ## Data Source
 Input File
-- File: layoffs(2).csv
+- File:[Download/View Raw Dataset](layoffs.csv)
 - Dataset: World Layoffs
 - Rows: 2,361
 - Columns: 9
