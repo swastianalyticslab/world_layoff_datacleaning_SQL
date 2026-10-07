@@ -26,28 +26,18 @@ Input File
 1. MySQL – SQL-based data cleaning and transformation.
 2. SQL – Duplicate detection, standardization, missing-value handling, date conversion and table modification.
 
-| Tool | Work Performed |
-|---|---|
-| MySQL | Imported and cleaned the dataset |
-| SQL | Duplicate detection and removal |
-| SQL | Text standardization |
-| SQL | Country and industry normalization |
-| SQL | Date conversion |
-| SQL | Missing-value investigation and selected imputation |
-| SQL | Removal of unusable records |
-
 ## Data Cleaning / Preparation Steps
 ### Phase 1 – Check the Raw Data
 The first step was to inspect the imported raw table before making any changes.
-```
+```sql
 SELECT *
 FROM world_layoffs.layoffs;
 ```
-This query displays the imported raw table and provides the starting point for identifying data-quality issues.
+ This query displays the imported raw table and provides the starting point for identifying data-quality issues.
 
 ### Phase 2 – Define Cleaning Tasks
 The SQL script identifies four major cleaning activities:
-```
+```sql
 1. Remove Duplicates
 2. Standardize Data
 3. Null/blank values
@@ -58,26 +48,26 @@ These tasks form the overall cleaning framework used in the project.
 ### Phase 3 – Create the Cleaning Layer
 The raw table was preserved and a separate staging table was created for cleaning.
 Create staging table
-```
+```sql
 CREATE TABLE world_layoffs.layoffs_staging
 LIKE world_layoffs.layoffs;
 ```
 Copy raw data into staging
-```
+```sql
 INSERT INTO world_layoffs.layoffs_staging
 SELECT *
 FROM world_layoffs.layoffs;
 ```
 This approach protects the original dataset while allowing transformations to be performed on a working copy.
 
-```
+```sql
 SELECT *
 FROM world_layoffs.layoffs_staging;
 ```
 
 #### Step 1 – Create and Copy to Staging
 A second staging table was created with an additional row_num column. This helper column was required for identifying duplicate records using the ROW_NUMBER() window function.
-```
+```sql
 CREATE TABLE layoffs_staging2 (
     company TEXT,
     location TEXT,
@@ -97,7 +87,7 @@ The original staging data was then inserted into this table.
 #### Step 2 – Check Record Count and Identify Duplicates
 Record count
 
-```
+```sql
 SELECT COUNT(*) AS total_records
 FROM world_layoffs.layoffs_staging;
 ```
@@ -106,7 +96,7 @@ The record count was checked before duplicate removal to establish a baseline.
 
 Identify potential duplicates
 
-```
+```sql
 WITH duplicate_cte AS
 (
     SELECT *,
@@ -136,7 +126,7 @@ The SQL also manually inspected companies such as Oda and Casper to determine wh
 #### Step 3 – Remove Duplicate Records
 The helper table was populated with a duplicate-ranking column:
 
-```
+```sql
 INSERT INTO world_layoffs.layoffs_staging2
 (
     company,
@@ -176,7 +166,7 @@ FROM world_layoffs.layoffs_staging;
 
 Then duplicate rows were deleted:
 
-```
+```sql
 DELETE
 FROM world_layoffs.layoffs_staging2
 WHERE row_num > 1;
@@ -184,7 +174,7 @@ WHERE row_num > 1;
 
 Finally, the table was checked again:
 
-```
+```sql
 SELECT *
 FROM world_layoffs.layoffs_staging2
 WHERE row_num > 1;
@@ -197,7 +187,7 @@ The SQL deletion step is explicitly shown in the supplied script.
 4.1 Trim company names
 Before updating:
 
-```
+```sql
 SELECT company, TRIM(company)
 FROM world_layoffs.layoffs_staging2;
 
@@ -212,7 +202,7 @@ This removes unnecessary leading/trailing whitespace from company names.
 4.2 Standardize industry values
 The unique industry values were reviewed:
 
-```
+```sql
 SELECT DISTINCT industry
 FROM world_layoffs.layoffs_staging2
 ORDER BY 1;
@@ -220,7 +210,7 @@ ORDER BY 1;
 
 Crypto-related variations were identified:
 
-```
+```sql
 SELECT *
 FROM world_layoffs.layoffs_staging2
 WHERE industry LIKE 'Crypto%';
@@ -228,7 +218,7 @@ WHERE industry LIKE 'Crypto%';
 
 They were standardized to a single category:
 
-```
+```sql
 UPDATE world_layoffs.layoffs_staging2
 SET industry = 'Crypto'
 WHERE industry LIKE 'Crypto%';
@@ -237,7 +227,7 @@ This consolidates values such as Crypto, Crypto Currency, and CryptoCurrency int
 
 4.3 Review location and country values
 
-```
+```sql
 SELECT DISTINCT location
 FROM world_layoffs.layoffs_staging2
 ORDER BY 1;
@@ -251,14 +241,14 @@ These queries were used to inspect categorical consistency.
 4.4 Standardize United States country value
 The dataset contained United States. as well as United States.
 
-```
+```sql
 SELECT *
 FROM world_layoffs.layoffs_staging2
 WHERE country LIKE 'United States%';
 ```
 The transformation used was:
 
-```
+```sql
 UPDATE world_layoffs.layoffs_staging2
 SET country = TRIM(TRAILING '.' FROM country)
 WHERE country LIKE 'United States%';
@@ -268,12 +258,12 @@ This removes the trailing period and standardizes the country label.
 
 #### Step 5 – Standardize Dates
 The raw date field was stored as text. The SQL first tested date conversion:
-```
+```sql
 SELECT STR_TO_DATE('3/6/2023', '%m/%d/%Y');
 ```
 
 The supplied script then checked conversion of the date field:
-```
+```sql
 SELECT
     `date`,
     STR_TO_DATE(`date`, '%m/%d/%Y') AS date_clean
@@ -285,17 +275,17 @@ SELECT
     STR_TO_DATE(`date`, '%Y-%m-%d') AS date_clean
 FROM world_layoffs.layoffs_staging2;
 The final conversion was:
-```
+```sql
 UPDATE world_layoffs.layoffs_staging2
 SET `date` = STR_TO_DATE(`date`, '%Y-%m-%d');
 ```
 Then the column was changed to the SQL DATE data type:
-```
+```sql
 ALTER TABLE world_layoffs.layoffs_staging2
 MODIFY COLUMN `date` DATE;
 ```
 The SQL also included a validation query for values that could not be converted:
-```
+```sql
 SELECT `date`
 FROM world_layoffs.layoffs_staging2
 WHERE STR_TO_DATE(`date`, '%Y-%m-%d') IS NULL
@@ -306,14 +296,14 @@ The date datatype was subsequently checked using DESCRIBE
 
 #### Step 6 – Handle Missing Industry Values
 The SQL first identified records where industry was unavailable:
-```
+```sql
 SELECT *
 FROM world_layoffs.layoffs_staging2
 WHERE industry IS NULL
 OR industry = '';
 ```
 The script then investigated individual companies, including:
-```
+```sql
 SELECT *
 FROM world_layoffs.layoffs_staging2
 WHERE company = 'Airbnb';
@@ -331,7 +321,7 @@ FROM world_layoffs.layoffs_staging2
 WHERE company = 'Juul';
 ```
 For selected companies, the industry was populated using a CASE expression:
-```
+```sql
 UPDATE world_layoffs.layoffs_staging2
 SET industry =
     CASE
@@ -345,14 +335,14 @@ WHERE company IN ('Juul', 'Carvana', 'Airbnb')
 ```
 #### Step 7 – Remove Unusable Records
 The script treats records with no information in either of the two main layoff measures as unusable:
-```
+```sql
 SELECT *
 FROM world_layoffs.layoffs_staging2
 WHERE total_laid_off IS NULL
 AND percentage_laid_off IS NULL;
 ```
 The identified records are then removed:
-```
+```sql
 DELETE FROM world_layoffs.layoffs_staging2
 WHERE total_laid_off IS NULL
 AND percentage_laid_off IS NULL;
@@ -361,12 +351,12 @@ In the uploaded raw CSV, 362 rows have both total_laid_off and percentage_laid_o
 
 #### Step 8 – Remove the Technical Helper Column
 After duplicate removal, the temporary row_num field was no longer needed.
-```
+```sql
 ALTER TABLE world_layoffs.layoffs_staging2
 DROP COLUMN row_num;
 ```
 The final table was then displayed:
-```
+```sql
 SELECT *
 FROM world_layoffs.layoffs_staging2;
 ```
