@@ -373,10 +373,12 @@ FROM world_layoffs.layoffs_staging2;
 This leaves the cleaned table with the original analytical fields only.
 
 ## Data Before Cleaning
-![Data Before Cleaning](Data before cleaning.png)
 
-## Data After Cleaning 
-![Data After Cleaning](Data_after_cleaning.png)
+![Data Before Cleaning](<Data before cleaning.png>)
+
+## Data After Cleaning
+
+![Data After Cleaning](<Data after cleaning.png>)
 
 ## Results / Findings
 | Finding | Result |
